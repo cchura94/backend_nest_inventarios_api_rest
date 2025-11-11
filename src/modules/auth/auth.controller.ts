@@ -2,6 +2,7 @@ import { Body, Controller, Get, Post, Request, UseGuards } from '@nestjs/common'
 import { LoginAuthDto } from './dto/login-auth.dto';
 import { AuthService } from './auth.service';
 import { AuthGuard } from './auth.guard';
+import { ApiBearerAuth } from '@nestjs/swagger';
 
 @Controller('auth')
 export class AuthController {
@@ -15,6 +16,7 @@ export class AuthController {
     }
 
 
+    @ApiBearerAuth()
     @UseGuards(AuthGuard)
     @Get('profile')
     funProfile(@Request() req){
