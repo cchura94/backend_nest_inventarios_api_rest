@@ -2,11 +2,12 @@ POST http://127.0.0.1:3000/auth/login
 Content-Type: application/json
 
 {
-    "email": "juan@mail.com",
-    "password": "juan54321"
+    "email": "maria@mail.com",
+    "password": "maria54321"
 }
 
 ### ver perfil
 
 GET http://127.0.0.1:3000/auth/profile
-Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6Imp1YW5AbWFpbC5jb20iLCJpZCI6IjJhYzFiYTE4LTkwZjUtNDg0My04M2VkLTdkYzkxOGIwNDBiOCIsImlhdCI6MTc2MjQ4MjM3NCwiZXhwIjoxNzYyNDgyNDM0fQ.cWMRECzp75OMeE6sTx-r8UyCYt6Xr7szE-ojmbp5ddo
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6Imp1YW5AbWFpbC5jb20iLCJpZCI6IjJhYzFiYTE4LTkwZjUtNDg0My04M2VkLTdkYzkxOGIwNDBiOCIsImlhdCI6MTc2MjgyMzUwMSwiZXhwIjoxNzYyODIzNTYxfQ.I1mZlvLr2buHpSrOjSHzQ0sFFmcoVe8vzfo5FdeWLqI
+

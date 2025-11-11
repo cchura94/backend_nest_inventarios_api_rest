@@ -1,9 +1,10 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { User } from './entities/user.entity';
 import { Repository } from 'typeorm';
+import * as bcrypt from 'bcrypt';
 
 @Injectable()
 export class UsersService {
@@ -15,24 +16,88 @@ export class UsersService {
     
   }
 
-  create(createUserDto: CreateUserDto) {
-    return 'This action adds a new user';
+  async create(createUserDto: CreateUserDto) {
+
+    const { email, username } = createUserDto;
+
+    // verificar su yta existe el username
+    const existeUsername = await this.userRepository.findOne({where: {username: username}});
+    if(existeUsername){
+      throw new BadRequestException(`El username "${username}" ya esta en uso`);
+    }
+
+    // verificar su yta existe el email
+    const existeEmail = await this.userRepository.findOne({where: {email: email}});
+    if(existeEmail){
+      throw new BadRequestException(`El email "${email}" ya está en uso`);
+    }
+
+    // encriptar la contraseña
+    const hashPassword = await bcrypt.hash(createUserDto.password, 12);
+
+    const newUser = this.userRepository.create({
+      username,
+      email,
+      password: hashPassword
+    });
+
+    this.userRepository.save(newUser);
+    const { password, ...resto_datos } = newUser;
+
+    return resto_datos;
   }
 
-  findAll() {
-    return `This action returns all users`;
+  async findAll(page:number = 1, limit: number=10, search:string = '') {
+
+    const queryBuilder = this.userRepository.createQueryBuilder('user')
+        .where('user.username LIKE :search OR user.email LIKE :search', {search: `%${search}%`})
+
+        queryBuilder.skip((page - 1)*limit).take(limit);
+
+        const [users, total] = await queryBuilder.getManyAndCount();
+
+        const totalPages = Math.ceil(total/limit);
+
+    return {
+      data: users,
+      total,
+      page,
+      limit,
+      totalPages,
+      search
+    };
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} user`;
+  async findOne(id: string) {
+    const user = await this.userRepository.findOneBy({id: id});
+    if(!user){
+      throw new NotFoundException(`User con ID ${id} No existe`);
+    }
+    return user;
   }
 
-  update(id: number, updateUserDto: UpdateUserDto) {
-    return `This action updates a #${id} user`;
+  async update(id: string, updateUserDto: UpdateUserDto) {
+    const user = await this.findOne(id);
+    // encriptar la contraseña
+    const hashPassword = await bcrypt.hash(updateUserDto.password, 12);
+
+    user.password = hashPassword;
+
+    Object.assign(user, updateUserDto);
+
+    let result = this.userRepository.save(user);
+
+    const {password, ...resto_datos} = user;
+    return resto_datos;
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} user`;
+  async remove(id: string) {
+    const result = await this.userRepository.delete(id);
+
+    if(result.affected === 0){
+      throw new NotFoundException(`User con ID ${id} Not Found`);
+    }
+
   }
 
   // para el login
