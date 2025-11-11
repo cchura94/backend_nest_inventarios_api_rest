@@ -1,0 +1,30 @@
+POST http://127.0.0.1:3000/users
+Content-Type: application/json
+
+{
+    "username": "julian",
+    "email": "julian@mail.com",
+    "password": "julian54321"
+}
+
+### Listado de usuarios con paginación
+
+GET http://127.0.0.1:3000/users?page=1&limit=3&search=
+
+### mostrar un usuario
+
+GET http://127.0.0.1:3000/users/39b0605a-3bf4-4d33-a84b-3bed14f7b336
+
+### modificar
+PATCH http://127.0.0.1:3000/users/2ac1ba18-90f5-4843-83ed-7dc918b040b8
+Content-Type: application/json
+
+{
+  "username": "juan modificado",
+  "email": "juan.modificado@mail.com",
+  "password": "juanMODIFICADO54321",
+  "isActive": true
+}
+
+### Eliminar Usuario
+DELETE http://127.0.0.1:3000/users/39b0605a-3bf4-4d33-a84b-3bed14f7b336
