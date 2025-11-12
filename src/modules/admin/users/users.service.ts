@@ -3,22 +3,25 @@ import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { User } from './entities/user.entity';
-import { Repository } from 'typeorm';
+import { In, Repository } from 'typeorm';
 import * as bcrypt from 'bcrypt';
+import { Role } from '../roles/entities/role.entity';
 
 @Injectable()
 export class UsersService {
 
   constructor(
     @InjectRepository(User)
-    private userRepository:Repository<User>
+    private userRepository:Repository<User>,
+    @InjectRepository(Role)
+    private roleRepository:Repository<Role>
   ){
     
   }
 
   async create(createUserDto: CreateUserDto) {
 
-    const { email, username } = createUserDto;
+    const { email, username, role_ids } = createUserDto;
 
     // verificar su yta existe el username
     const existeUsername = await this.userRepository.findOne({where: {username: username}});
@@ -32,13 +35,23 @@ export class UsersService {
       throw new BadRequestException(`El email "${email}" ya está en uso`);
     }
 
+    // roles
+    let roles: Role[] = [];
+    if(role_ids?.length){
+      roles = await this.roleRepository.find({where: {id: In(role_ids)}});
+      if(roles.length !== role_ids.length){
+        throw new BadRequestException('Uno o más roles no son válidos');
+      }
+    }
+
     // encriptar la contraseña
     const hashPassword = await bcrypt.hash(createUserDto.password, 12);
 
     const newUser = this.userRepository.create({
       username,
       email,
-      password: hashPassword
+      password: hashPassword,
+      roles
     });
 
     this.userRepository.save(newUser);

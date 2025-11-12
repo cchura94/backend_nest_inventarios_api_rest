@@ -2,9 +2,10 @@ POST http://127.0.0.1:3000/users
 Content-Type: application/json
 
 {
-    "username": "julian",
-    "email": "julian@mail.com",
-    "password": "julian54321"
+    "username": "carlos",
+    "email": "carlos@mail.com",
+    "password": "carlos54321",
+    "role_ids": [1, 3]
 }
 
 ### Listado de usuarios con paginación

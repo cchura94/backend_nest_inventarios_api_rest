@@ -24,5 +24,5 @@ export class User {
         joinColumn: {name: 'user_id'},
         inverseJoinColumn: {name: 'role_id'}
     })
-    roles: Role;
+    roles: Role[];
 }
