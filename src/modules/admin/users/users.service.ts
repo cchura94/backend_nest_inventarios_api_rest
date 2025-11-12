@@ -50,6 +50,7 @@ export class UsersService {
   async findAll(page:number = 1, limit: number=10, search:string = '') {
 
     const queryBuilder = this.userRepository.createQueryBuilder('user')
+        .leftJoinAndSelect('user.roles', 'role')
         .where('user.username LIKE :search OR user.email LIKE :search', {search: `%${search}%`})
 
         queryBuilder.skip((page - 1)*limit).take(limit);
