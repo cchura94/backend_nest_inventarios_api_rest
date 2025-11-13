@@ -1,19 +1,29 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { CreateAlmacenDto } from './dto/create-almacen.dto';
 import { UpdateAlmacenDto } from './dto/update-almacen.dto';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Almacen } from './entities/almacen.entity';
+import { Repository } from 'typeorm';
 
 @Injectable()
 export class AlmacenService {
+  constructor(
+    @InjectRepository(Almacen)
+    private readonly almacenRepository: Repository<Almacen>
+){}
   create(createAlmacenDto: CreateAlmacenDto) {
-    return 'This action adds a new almacen';
+    // const alm = this.almacenRepository.create(createAlmacenDto);
+    // return this.almacenRepository.save(alm)
   }
 
   findAll() {
-    return `This action returns all almacen`;
+    return this.almacenRepository.find();
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} almacen`;
+  async findOne(id: number) {
+    const almacen = await this.almacenRepository.findOneBy({id})
+    if(!almacen) throw new NotFoundException('El almacen no existe');
+    return almacen;
   }
 
   update(id: number, updateAlmacenDto: UpdateAlmacenDto) {
