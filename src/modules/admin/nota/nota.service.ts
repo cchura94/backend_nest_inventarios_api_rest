@@ -1,16 +1,17 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { CreateNotaDto } from './dto/create-nota.dto';
 import { UpdateNotaDto } from './dto/update-nota.dto';
 import { FiltroNotaDto } from './dto/filtro-nota.dto';
 import { InjectDataSource, InjectRepository } from '@nestjs/typeorm';
 import { Nota } from './entities/nota.entity';
-import { Repository } from 'typeorm';
-import { DataSource } from 'typeorm/browser';
+import { Repository, QueryRunner, DataSource } from 'typeorm';
 import { User } from '../users/entities/user.entity';
 import { ClienteProveedor } from '../cliente-proveedor/entities/cliente-proveedor.entity';
 import { Producto } from '../inventario/producto/entities/producto.entity';
 import { Almacen } from '../inventario/almacen/entities/almacen.entity';
 import { Movimiento } from './entities/movimiento.entity';
+
+import { AlmacenProducto } from '../inventario/almacen/entities/almacen_producto.entity';
 
 @Injectable()
 export class NotaService {
@@ -20,7 +21,26 @@ export class NotaService {
     private readonly dataSource: DataSource,
 
     @InjectRepository(Nota)
-    private notaRepo: Repository<Nota>
+    private notaRepo: Repository<Nota>,
+
+    @InjectRepository(Movimiento)
+    private movRepo: Repository<Movimiento>,
+    
+    @InjectRepository(User)
+    private userRepo: Repository<User>,
+
+    @InjectRepository(Producto)
+    private productoRepo: Repository<Producto>,
+
+    @InjectRepository(Almacen)
+    private almacenRepo: Repository<Almacen>,
+
+    @InjectRepository(ClienteProveedor)
+    private clienteRepo: Repository<ClienteProveedor>,
+
+    @InjectRepository(AlmacenProducto)
+    private almacenProductoRepo: Repository<AlmacenProducto>
+    
   ){
 
   }
@@ -56,10 +76,34 @@ export class NotaService {
       await notaRepo.save(nota);
 
       // registrar ingresos y salidas de inventario
-      // actualizar stock de inventario
+      const movimientosGuardados: Movimiento[] = []
 
+      for (const m of createNotaDto.movimientos) {
+        const producto = await productoRepo.findOneBy({id: m.producto_id});
+        if(!producto) throw new NotFoundException('Producto no encontrado');
 
-      await queryRunner.commitTransaction();      
+        const almacen = await almacenRepo.findOneBy({id: m.almacen_id});
+        if(!almacen) throw new NotFoundException('Almacen no encontrado');
+
+        const movimiento = movimientoRepo.create({
+          ...m,
+          nota: nota,
+          producto,
+          almacen
+        });
+
+        // actualizar stock de inventario
+        await this.actualizarStockConQueryRunner(queryRunner, almacen, producto, m.cantidad, m.tipo_movimiento)
+
+        const movGuardado = await movimientoRepo.save(movimiento);
+        movimientosGuardados.push(movGuardado);
+        
+      }
+      nota.movimientos = movimientosGuardados;
+      
+      await queryRunner.commitTransaction(); 
+
+      return nota;     
     } catch (error) {
       await queryRunner.rollbackTransaction();
       throw error;      
@@ -68,6 +112,41 @@ export class NotaService {
     }
     
     
+  }
+
+  private async actualizarStockConQueryRunner(queryRunner: QueryRunner, almacen: Almacen, producto: Producto, cantidad: number, tipo: 'ingreso' | 'salida' | 'devolucion'){
+    const almacenProductoRepo = queryRunner.manager.getRepository(AlmacenProducto);
+    
+    let ap = await almacenProductoRepo.findOne({
+      where: {
+        almacen: {id: almacen.id},
+        producto: {id: producto.id}
+      },
+      relations: ['almacen', 'producto']
+    });
+
+    if(!ap){
+      if(tipo === 'salida'){
+        throw new BadRequestException('No hay stock registrado para este producto en este almacen');
+      }
+
+      ap = almacenProductoRepo.create({
+        almacen, producto, cantidad_actual: cantidad, fecha_actualizacion: new Date()
+      });
+      
+    }else{
+      if(tipo === 'ingreso' || tipo === 'devolucion'){
+        ap.cantidad_actual += cantidad;
+      }else if(tipo === 'salida'){
+        if(ap.cantidad_actual < cantidad){
+          throw new BadRequestException('Stock insuficiente para la salida');
+        }
+        ap.cantidad_actual -= cantidad;
+      }
+      ap.fecha_actualizacion = new Date()
+    }
+
+    await almacenProductoRepo.save(ap);
   }
 
   async findAll(filtro: FiltroNotaDto) {
