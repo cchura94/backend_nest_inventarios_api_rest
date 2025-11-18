@@ -4,16 +4,23 @@ import { UpdateAlmacenDto } from './dto/update-almacen.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Almacen } from './entities/almacen.entity';
 import { Repository } from 'typeorm';
+import { Sucursal } from '../sucursal/entities/sucursal.entity';
 
 @Injectable()
 export class AlmacenService {
   constructor(
     @InjectRepository(Almacen)
-    private readonly almacenRepository: Repository<Almacen>
+    private readonly almacenRepository: Repository<Almacen>,
+    @InjectRepository(Sucursal)
+    private readonly sucursalRepository: Repository<Sucursal>
 ){}
-  create(createAlmacenDto: CreateAlmacenDto) {
-    // const alm = this.almacenRepository.create(createAlmacenDto);
-    // return this.almacenRepository.save(alm)
+  async create(createAlmacenDto: CreateAlmacenDto) {
+
+    const sucursal = await this.sucursalRepository.findOne({where: {id: createAlmacenDto.sucursal}})
+    if(!sucursal) throw new NotFoundException('Sucursal no encontrada');
+
+    const alm = this.almacenRepository.create({...createAlmacenDto, sucursal});
+    return this.almacenRepository.save(alm)
   }
 
   findAll() {
