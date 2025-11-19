@@ -1,8 +1,12 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards } from '@nestjs/common';
 import { ClienteProveedorService } from './cliente-proveedor.service';
 import { CreateClienteProveedorDto } from './dto/create-cliente-proveedor.dto';
 import { UpdateClienteProveedorDto } from './dto/update-cliente-proveedor.dto';
+import { ApiBearerAuth } from '@nestjs/swagger';
+import { AuthGuard } from 'src/modules/auth/auth.guard';
 
+@ApiBearerAuth()
+@UseGuards(AuthGuard)
 @Controller('cliente-proveedor')
 export class ClienteProveedorController {
   constructor(private readonly clienteProveedorService: ClienteProveedorService) {}

@@ -59,6 +59,9 @@ export class NotaService {
       const almacenRepo = queryRunner.manager.getRepository(Almacen);
       const movimientoRepo = queryRunner.manager.getRepository(Movimiento);
 
+      // Procedimientos almacenado
+      // await queryRunner.manager.query('CALL buscar_usuario($1, $2)',[nombreUsuario, emailUsuario])
+
       const user = await userRepo.findOneBy({id: createNotaDto.user_id});
       if(!user) throw new NotFoundException('Usuario no encontrado');
 
