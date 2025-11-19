@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { CreateProductoDto } from './dto/create-producto.dto';
 import { UpdateProductoDto } from './dto/update-producto.dto';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -24,6 +24,29 @@ export class ProductoService {
 
     const producto = this.productoRepository.create({...createProductoDto, categoria});
     return this.productoRepository.save(producto);
+  }
+
+  async subidaImagen(file: Express.Multer.File, id: number){
+
+    // validar
+    const valid = ['image/jpeg', 'image/png', 'image/jpg'];
+    if(!valid.includes(file.mimetype)){
+      throw new BadRequestException('Formato Invalido');
+    }
+
+    // validar el tamaño de archivo
+
+    const maxSize = 5 * 1024*1024;
+
+    if(file.size > maxSize){
+      throw new BadRequestException('El archivo es muy grande');
+    }
+
+    const producto = await this.findOne(id);
+    producto.imagen = file.path;
+    this.productoRepository.save(producto);
+
+    return {message: 'Archivo subido', filepath: file.path};
   }
 
   // paginación

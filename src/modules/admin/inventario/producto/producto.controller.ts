@@ -1,7 +1,8 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, UploadedFile, UseInterceptors } from '@nestjs/common';
 import { ProductoService } from './producto.service';
 import { CreateProductoDto } from './dto/create-producto.dto';
 import { UpdateProductoDto } from './dto/update-producto.dto';
+import { FileInterceptor } from '@nestjs/platform-express';
 
 @Controller('producto')
 export class ProductoController {
@@ -10,6 +11,12 @@ export class ProductoController {
   @Post()
   create(@Body() createProductoDto: CreateProductoDto) {
     return this.productoService.create(createProductoDto);
+  }
+
+  @Post(':id/actualizar-imagen')
+  @UseInterceptors(FileInterceptor('imagen'))
+  subirImagen(@UploadedFile() file: Express.Multer.File, @Param('id') id: number){
+    return this.productoService.subidaImagen(file, id);
   }
 
   @Get()
