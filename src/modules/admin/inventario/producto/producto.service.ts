@@ -5,7 +5,8 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Producto } from './entities/producto.entity';
 import { Repository } from 'typeorm';
 import { Categoria } from '../categoria/entities/categoria.entity';
-import { take } from 'rxjs';
+import PDFDocument from 'pdfkit'
+import { Response } from 'express';
 
 @Injectable()
 export class ProductoService {
@@ -105,5 +106,60 @@ export class ProductoService {
     const producto = await this.findOne(id)
     producto.activo = false;
     await this.productoRepository.save(producto);
+  }
+
+  /*
+  async generatePDF() {
+
+    const pdfBuffer: Buffer = await new Promise(resolve => {
+      const doc = new PDFDocument({
+        size: 'LETTER',
+        bufferPages: true,
+      })
+
+      // customize your PDF document
+      doc.text('Hola Mundo', 100, 50)
+      doc.end()
+
+      const buffer = []
+      doc.on('data', buffer.push.bind(buffer))
+      doc.on('end', () => {
+        const data = Buffer.concat(buffer)
+        resolve(data)
+      })
+    })
+
+    return pdfBuffer
+  }
+  */
+
+  async generatePDF(res: Response) {
+
+    const productos = this.productoRepository.find();
+
+    const doc = new PDFDocument();
+
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', 'attachment; filename=reporte.pdf');
+  
+    doc.pipe(res);
+
+    doc.fontSize(20).text('Lista de Productos', {
+      align: 'center'
+    });
+    doc.moveDown();
+
+    doc.fontSize(12);
+
+    (await productos).forEach((producto, index) => {
+      doc.text(`${index+1}. ${producto.nombre} - ${producto.precio_venta_actual} - ${producto.descripcion}`)
+
+      doc.moveDown(0.5);
+
+    });
+
+
+    doc.end()
+
   }
 }
